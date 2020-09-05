@@ -49,3 +49,5 @@ class QLearningTable:
                     name=state,
                 )
             )
+    def print_q_table(self):
+        print(self.q_table)

@@ -17,7 +17,7 @@ from RL_brain import QLearningTable
 
 
 def update():
-    for episode in range(100):
+    for episode in range(10):
         # initial observation
         observation = env.reset()
 
@@ -48,6 +48,7 @@ def update():
 if __name__ == "__main__":
     env = Maze()
     RL = QLearningTable(actions=list(range(env.n_actions)))
-
     env.after(100, update)
     env.mainloop()
+    RL.print_q_table()
+    
