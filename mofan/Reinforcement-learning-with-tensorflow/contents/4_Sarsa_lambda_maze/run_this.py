@@ -12,7 +12,7 @@ from RL_brain import SarsaLambdaTable
 
 
 def update():
-    for episode in range(100):
+    for episode in range(10):
         # initial observation
         observation = env.reset()
 

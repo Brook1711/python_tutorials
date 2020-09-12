@@ -78,16 +78,17 @@ class SarsaLambdaTable(RL):
         error = q_target - q_predict
 
         # increase trace amount for visited state-action pair
-
-        # Method 1:
+        #对于经历过的state-action，我们让他+1，证明他是得到reward途中不可或缺的一环
+        
+        # Method 1:直接在原基础上加1
         # self.eligibility_trace.loc[s, a] += 1
 
-        # Method 2:
+        # Method 2:将之前所有行动的value清0，只保持了最近一次获得的reward的action。
         self.eligibility_trace.loc[s, :] *= 0
         self.eligibility_trace.loc[s, a] = 1
 
-        # Q update
+        # Q update 与原先sarsa相比，多乘了一个lamda（eligibility_trace）
         self.q_table += self.lr * error * self.eligibility_trace
 
-        # decay eligibility trace after update
+        # decay eligibility trace after update  乘以折扣因子和trace_decay
         self.eligibility_trace *= self.gamma*self.lambda_
