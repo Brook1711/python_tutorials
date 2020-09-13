@@ -49,6 +49,7 @@ class System_model:
         self.P_min = 0.3 # minimum detection accuracy
 
         self.stdShadow = 8 # std deviation; dB
+
         
         H = [] # the fading vecter  
         for i in range(self.M):
@@ -71,7 +72,7 @@ class System_model:
         self.Imn = [[11.1, 1.6, 1.5], [1.0, 8.5, 0.3], [0.0, 1.9, 0.0]]
 
         #Q_learning parameters
-        self.actions = ['increase', 'decrease'] #available actions
+        self.actions = [[0,1],[0,2],[1,0],[1,2],[2,0],[2,2]] #available actions
         self.epsilon = 0.9 #greedy police
         self.q_alpha = 0.1 #learning rate
         self.q_gamma = 0.9 #discount factor
@@ -123,14 +124,14 @@ class System_model:
         F = F/self.M
         return F
     
-    ######Use Q_learning to get the maximum of F
+    """Use Q_learning to get the maximum of F"""
     #Enlarge the Q_Table's states
     def check_state_exist(self, state):
         if state not in self.q_table.index:
             # append new state to q table
             self.q_table = self.q_table.append(pd.Series([0]*len(self.actions), index=self.q_table.columns, name=state))
 
-    #Choose to increase or decrease(the best action or random)
+    #Choose actions: increase or decrease(the best action or random)
     def choose_action(self, observation):
         self.check_state_exist(observation)
         if np.random.uniform() < self.epsilon:
@@ -140,10 +141,45 @@ class System_model:
             action = np.random.choice(state_action[state_action == np.max(state_action)].index)
         else:
             # choose random action
-            action = np.random.choice(self.actions)
+            action = np.random.choice(self.actions)    
         return action
 
-    #update the q_table
+    #Reward function
+    def reward(self, s):
+        f = self.calculate_F() #current F
+        a = self.choose_action(s) #get the action
+        #change the state(Bm)
+        
+
+        if a == self.actions[0]:
+            self.Bm[0] = self.Bm[0] + self.delta_B
+            self.Bm[1] = self.Bm[1] - self.delta_B
+
+        elif a == self.actions[1]:
+            self.Bm[0] = self.Bm[0] + self.delta_B
+            self.Bm[2] = self.Bm[2] - self.delta_B
+
+        elif a == self.actions[2]:
+            self.Bm[1] = self.Bm[1] + self.delta_B
+            self.Bm[0] = self.Bm[0] - self.delta_B
+
+        elif a == self.actions[3]:
+            self.Bm[1] = self.Bm[1] + self.delta_B
+            self.Bm[2] = self.Bm[2] - self.delta_B
+        
+        elif a == self.actions[4]:
+            self.Bm[2] = self.Bm[2] + self.delta_B
+            self.Bm[0] = self.Bm[0] - self.delta_B
+        
+        else:
+            self.Bm[2] = self.Bm[2] + self.delta_B
+            self.Bm[1] = self.Bm[1] - self.delta_B
+        
+
+        f_ = self.calculate_F() #next F
+        Reward = f_ - f #the difference between F and F_ represents the reward
+
+    #Update the q_table
     def learn(self, s, a, r, s_):
         self.check_state_exist(s_)
         q_predict = self.q_table.loc[s, a]
@@ -152,6 +188,8 @@ class System_model:
         else:
             q_target = r  # next state is terminal
         self.q_table.loc[s, a] += self.q_alpha * (q_target - q_predict)  # update
+    
+
 
      
     
