@@ -80,6 +80,9 @@ class System_model:
             action_tmp.append(i)
         self.actions = action_tmp
 
+        # F calculation
+        self.F = self.calculate_F()
+
         #self.actions = ['increase', 'decrease'] #available actions
         self.epsilon = 0.9 #greedy police
         self.q_alpha = 0.1 #learning rate
@@ -164,11 +167,26 @@ class System_model:
 
     # update state
     def step(self, action):
+        if_restart = False
+        state_last = str(self.Bm)
+        reward = 0
         # action is a 1 times 2 vecter(list), first is add second is -
         self.Bm[action[0]] = self.Bm[action[0]] + self.delta_B
-        self.Bm[action[1]] = self.Bm[action[1]] + self.delta_B
-        
-        return True
+        self.Bm[action[1]] = self.Bm[action[1]] - self.delta_B
+        if self.Bm[action[1]] < self.B_min:
+            reward = -100
+            if_restart = True
+        else:
+            reward = self.calculate_F() - self.F
+            self.F = self.calculate_F()
+
+        return state_last, reward, if_restart
+    
+    def restart(self):
+        for i in range(self.M):
+            self.Bm[i] = self.B_total / self.M
+            self.F = self.calculate_F()
+        return
 
      
     
