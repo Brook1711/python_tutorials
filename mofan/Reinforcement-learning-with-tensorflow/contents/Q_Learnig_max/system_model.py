@@ -72,13 +72,16 @@ class System_model:
         self.Imn = [[11.1, 1.6, 1.5], [1.0, 8.5, 0.3], [0.0, 1.9, 0.0]]
 
         #Q_learning parameters
-        action_tmp = [] # list of actions 2CM
-        for i in itertools.combinations(range(self.M), 2):
-            i=list(i)
-            action_tmp.append(i)
-            i.reverse()
-            action_tmp.append(i)
-        self.actions = action_tmp
+
+        actions_tmp = [] # list of actions 2CM
+        actions_str_tmp = ''
+        for i in range(3):
+                    actions_str_tmp = actions_str_tmp + str(i)
+        
+        for i in itertools.combinations(actions_str_tmp, 2):
+            actions_tmp.append(''.join(i))
+            actions_tmp.append(''.join(i[::-1]))
+        self.actions = actions_tmp
 
         # F calculation
         self.F = self.calculate_F()
@@ -110,7 +113,7 @@ class System_model:
     #Calculate the transfer rate: RTm=Bm*log2(1+Sm*hm/sigma²)
     def calculate_R(self, m):
         #trasfer rate
-        Rm = self.Bm[m]*math.log2(1+self.S[m]*self.calculate_fading(self.stdShadow,self.D[m])/self.Sigma_square[m])
+        Rm = self.Bm[m] * 10e6 *math.log2(1+self.S[m]*self.calculate_fading(self.stdShadow,self.D[m])/self.Sigma_square[m])
         return Rm
     
     #Calculate the QP value of the video encoder: Qm=am*exp(bm*Rm) 
@@ -171,14 +174,15 @@ class System_model:
         state_last = str(self.Bm)
         reward = 0
         # action is a 1 times 2 vecter(list), first is add second is -
-        self.Bm[action[0]] = self.Bm[action[0]] + self.delta_B
-        self.Bm[action[1]] = self.Bm[action[1]] - self.delta_B
-        if self.Bm[action[1]] < self.B_min:
+        self.Bm[int(action[0])] = self.Bm[int(action[0])] + self.delta_B
+        self.Bm[int(action[1])] = self.Bm[int(action[1])] - self.delta_B
+        if self.Bm[int(action[1])] < self.B_min:
             reward = -100
             if_restart = True
         else:
-            reward = self.calculate_F() - self.F
-            self.F = self.calculate_F()
+            F_new = self.calculate_F()
+            reward = F_new - self.F
+            self.F = F_new
 
         return state_last, reward, if_restart
     

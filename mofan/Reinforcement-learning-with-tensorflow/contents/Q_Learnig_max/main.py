@@ -3,8 +3,9 @@ import system_model
 my_model = system_model.System_model(2)
 
 print(1)
+first_F =  my_model.F
 best_F = my_model.F
-for episode in range(10):
+for episode in range(100):
     while True:
         # choose action from current state
         action = my_model.choose_action(str(my_model.Bm))
@@ -16,6 +17,8 @@ for episode in range(10):
         if if_restart:
             my_model.restart()
             print(best_F)
-            print(my_model.F)
+            #print(my_model.F)
+            print("episode end")
+            break
         
-print(my_model.calculate_F())
+print("*****     " , best_F - first_F)
