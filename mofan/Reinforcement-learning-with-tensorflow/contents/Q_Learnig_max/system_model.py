@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import random
 import math
+import itertools
 class System_model:
     #initialize parameters
     def __init__(self, B_total = 2):
@@ -59,7 +60,7 @@ class System_model:
         for m in range(self.M):
             Bm.append(self.B_total / self.M)
         self.Bm = Bm
-        
+
         #model parameters
         self.am = [46.27, 45.96, 45.22]
         self.bm = [-7.086e-5, -8.648e-5, -1.052e-4]
@@ -71,13 +72,21 @@ class System_model:
         self.Imn = [[11.1, 1.6, 1.5], [1.0, 8.5, 0.3], [0.0, 1.9, 0.0]]
 
         #Q_learning parameters
-        self.actions = ['increase', 'decrease'] #available actions
+        action_tmp = [] # list of actions 2CM
+        for i in itertools.combinations(range(self.M), 2):
+            i=list(i)
+            action_tmp.append(i)
+            i.reverse()
+            action_tmp.append(i)
+        self.actions = action_tmp
+
+        #self.actions = ['increase', 'decrease'] #available actions
         self.epsilon = 0.9 #greedy police
         self.q_alpha = 0.1 #learning rate
         self.q_gamma = 0.9 #discount factor
         self.max_epsodes = 13 #maximum episodes
         self.q_table = pd.DataFrame(columns=self.actions, dtype=np.float64) #build an empty q_table
-        self.delta_B = B_total/10.0 #minimum change of the bandwidth
+        self.delta_B = B_total/100.0 #minimum change of the bandwidth
 
 
     #Calculate the total fading
@@ -152,6 +161,14 @@ class System_model:
         else:
             q_target = r  # next state is terminal
         self.q_table.loc[s, a] += self.q_alpha * (q_target - q_predict)  # update
+
+    # update state
+    def step(self, action):
+        # action is a 1 times 2 vecter(list), first is add second is -
+        self.Bm[action[0]] = self.Bm[action[0]] + self.delta_B
+        self.Bm[action[1]] = self.Bm[action[1]] + self.delta_B
+        
+        return True
 
      
     
