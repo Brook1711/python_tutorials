@@ -74,8 +74,13 @@ class System_model:
         #Q_learning parameters
         actions_tmp = []
         actions_str_tmp = ''
+<<<<<<< HEAD
         for i in range(3):
             actions_str_tmp = actions_str_tmp + str(i)
+=======
+        for i in range(self.M):
+                    actions_str_tmp = actions_str_tmp + str(i)
+>>>>>>> edc71511e08ff1cc6d1d7e726187524ba94d0f91
         
         for i in itertools.combinations(actions_str_tmp, 2):
             actions_tmp.append(''.join(i))
@@ -86,10 +91,14 @@ class System_model:
         self.q_alpha = 0.1 #learning rate
         self.q_gamma = 0.9 #discount factor
         self.q_table = pd.DataFrame(columns=self.actions, dtype=np.float64) #build an empty q_table
+<<<<<<< HEAD
         self.delta_B = B_total/100.0 #minimum change of the bandwidth (one step change)
 
         # F calculation
         self.F = self.calculate_F()
+=======
+        self.delta_B = B_total/30.0 #minimum change of the bandwidth
+>>>>>>> edc71511e08ff1cc6d1d7e726187524ba94d0f91
 
 
     #Calculate the total fading
