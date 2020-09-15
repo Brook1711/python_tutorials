@@ -1,6 +1,6 @@
 import system_model
 # 2020/9/13
-my_model = system_model.System_model(2)
+my_model = system_model.System_model(2) #Create an object of the class, the total bandwidth is 2 MHz
 
 print(1)
 first_F =  my_model.F

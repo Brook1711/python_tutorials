@@ -12,27 +12,27 @@ class System_model:
         self.M = 3 # numbers of vehicles
         self.N = 3 # numbers of categories
 
-        Delta = [] # vecters of \delta N dimentions all 1, weights of each categories
+        Delta = [] # vectors of the weights of each categories, all 1
         for n in range(self.N):
             Delta.append(1)
         self.Delta = Delta
 
-        V = [] # vecters of the speed of the N vehicles, slower than 60km/h
+        V = [] # vectors of the speed of the N vehicles, slower than 60km/h
         for n in range(self.M):
             V.append(random.randint(0,60))
         self.V = V
         
-        D = [] # vecters of the distance from each vehicles to the server; range from 0.1km to 1.1km
+        D = [] # vectors of the distance from each vehicles to the server; range from 0.1km to 1.1km
         for n in range(self.M):
             D.append(random.uniform(0.1,1.1))
         self.D = D
         
-        S = [] # vecters of the transmit power for each vehicle; all 23dBm
+        S = [] # vectors of the transmit power for each vehicle; all 23dBm
         for n in range(self.M): 
             S.append(23)
         self.S = S
         
-        Sigma_square = [] # vecters of the noise power for each vehicles; all -174 dbm/Hz
+        Sigma_square = [] # vectors of the noise power for each vehicles; all -174 dBm/Hz
         for n in range(self.M):
             Sigma_square.append(-174)
         self.Sigma_square = Sigma_square
@@ -43,56 +43,53 @@ class System_model:
 
         self.te = 50 # small-scaling fading interval; 50ms
 
-        self.B_total = B_total # total band resourse; MHz 2~20
+        self.B_total = B_total # total band resourse; MHz 2~20; it's a variable parameter
         
         self.B_min = B_total/10.0 #minimum bandwidth limit
         
         self.P_min = 0.3 # minimum detection accuracy
 
-        self.stdShadow = 8 # std deviation; dB
+        self.stdShadow = 8 # standard deviation; dB
         
-        H = [] # the fading vecter  
-        for i in range(self.M):
-            H.append(self.calculate_fading(self.stdShadow, self.D[i]))
+        H = [] # the fading vector  
+        for m in range(self.M):
+            H.append(self.calculate_fading(self.stdShadow, self.D[m]))
         self.H = H
         
-        Bm = [] # band allocation
+        Bm = [] # band allocation; it's initialized to be evenly distributed
         for m in range(self.M):
             Bm.append(self.B_total / self.M)
         self.Bm = Bm
 
-        #model parameters
+        #model parameters; it's used in formula calculation
         self.am = [46.27, 45.96, 45.22]
         self.bm = [-7.086e-5, -8.648e-5, -1.052e-4]
         self.alpha_n = [-2.214e-12, -3.820e-13, -8.405e-8]
         self.beta_n = [6.741, 7.256, 4.158]
         self.gamma_n = [0.6940, 0.6958, 0.7250]
 
-        #video clip information
+        #video clip information; it's used in formula calculation
         self.Imn = [[11.1, 1.6, 1.5], [1.0, 8.5, 0.3], [0.0, 1.9, 0.0]]
 
         #Q_learning parameters
-
-        actions_tmp = [] # list of actions 2CM
+        actions_tmp = []
         actions_str_tmp = ''
         for i in range(3):
-                    actions_str_tmp = actions_str_tmp + str(i)
+            actions_str_tmp = actions_str_tmp + str(i)
         
         for i in itertools.combinations(actions_str_tmp, 2):
             actions_tmp.append(''.join(i))
-            actions_tmp.append(''.join(i[::-1]))
+            actions_tmp.append(''.join(i[::-1]))  #Concatenate string array；'' is delimiter
         self.actions = actions_tmp
 
-        # F calculation
-        self.F = self.calculate_F()
-
-        #self.actions = ['increase', 'decrease'] #available actions
         self.epsilon = 0.9 #greedy police
         self.q_alpha = 0.1 #learning rate
         self.q_gamma = 0.9 #discount factor
-        self.max_epsodes = 13 #maximum episodes
         self.q_table = pd.DataFrame(columns=self.actions, dtype=np.float64) #build an empty q_table
-        self.delta_B = B_total/100.0 #minimum change of the bandwidth
+        self.delta_B = B_total/100.0 #minimum change of the bandwidth (one step change)
+
+        # F calculation
+        self.F = self.calculate_F()
 
 
     #Calculate the total fading
