@@ -75,7 +75,7 @@ class System_model:
 
         actions_tmp = [] # list of actions 2CM
         actions_str_tmp = ''
-        for i in range(3):
+        for i in range(self.M):
                     actions_str_tmp = actions_str_tmp + str(i)
         
         for i in itertools.combinations(actions_str_tmp, 2):
@@ -92,7 +92,7 @@ class System_model:
         self.q_gamma = 0.9 #discount factor
         self.max_epsodes = 13 #maximum episodes
         self.q_table = pd.DataFrame(columns=self.actions, dtype=np.float64) #build an empty q_table
-        self.delta_B = B_total/100.0 #minimum change of the bandwidth
+        self.delta_B = B_total/30.0 #minimum change of the bandwidth
 
 
     #Calculate the total fading
