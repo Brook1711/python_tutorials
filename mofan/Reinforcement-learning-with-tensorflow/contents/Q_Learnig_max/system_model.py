@@ -118,7 +118,7 @@ class System_model:
     #Calculate the transfer rate: RTm=Bm*log2(1+Sm*hm/sigma²)
     def calculate_R(self, m):
         #trasfer rate
-        Rm = self.Bm[m]*math.log2(1+self.S[m]*self.calculate_fading(self.stdShadow,self.D[m])/self.Sigma_square[m])
+        Rm = self.Bm[m]*math.log2(1+self.S[m]*self.calculate_fading(self.stdShadow,self.D[m])/(self.Sigma_square[m] *self.Bm[m] ))
         return Rm
     
     #Calculate the QP value of the video encoder: Qm=am*exp(bm*Rm) 
