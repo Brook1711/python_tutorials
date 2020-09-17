@@ -19,27 +19,21 @@ for episode in range(10):
         #(2).Use action(string) and present state to get the next state and reward
         state_last, reward, if_restart = my_model.step(action)
 
-
-
-
         #Record the highest F value and Bm[]
         #The self.parameters are global variables which is changinng during the whole process
         if my_model.F >= best_F:
-            print("**************************arangement found*******************************")
-            print(my_model)
-            print("found new arangemaet 'Bm'            :  " + str(my_model.Bm))
-            print("under this arangement, the F is      :  " + str(my_model.F))
+            print("**************************arrangement found*******************************")
+            print("found new arrangemaet 'Bm'           :  " + str(my_model.Bm))
+            print("under this arrangement, the F is     :  " + str(my_model.F))
             print("              the original F is      :  " + str(first_F))
             print("compare to the original F , F varies :  " + str(my_model.F - first_F))
 
             # debug vaneriables
-            watch_delta_F = best_F - first_F
+            # watch_delta_F = best_F - first_F
 
             # iteration of F & best_Bm
             best_Bm = str(my_model.Bm)
             best_F = float(my_model.F)
-
-
 
         #(3).Use s, a, s_, r to update the q table  
         my_model.learn(state_last, action, reward, str(my_model.Bm))

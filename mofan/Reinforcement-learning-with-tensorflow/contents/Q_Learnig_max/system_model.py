@@ -26,7 +26,7 @@ class System_model:
         D = [] # vectors of the distance from each vehicles to the server; range from 0.1km to 1.1km
         for m in range(self.M):
             #D.append(random.uniform(0.1,1.1))
-            D.append(2)
+            D.append(3)
         self.D = D
         
         S = [] # vectors of the transmit power for each vehicle; all 23dBm
@@ -63,6 +63,7 @@ class System_model:
             Bm.append(self.B_total / self.M)
         self.Bm = Bm
 
+        self.Rm_times = 300
         #model parameters; it's used in formula calculation
         self.am = [46.27, 45.96, 45.22]
         self.bm = [-7.086e-5, -8.648e-5, -1.052e-4]
@@ -118,8 +119,13 @@ class System_model:
     
     #Calculate the transfer rate: RTm=Bm*log2(1+Sm*hm/sigma²)
     def calculate_R(self, m):
-        #trasfer rate
-        Rm = self.Bm[m]*math.log2(1+self.S[m]*self.calculate_fading(self.stdShadow,self.D[m])/(self.Sigma_square[m] *self.Bm[m] ))
+        #transfer rate sets
+        Rm_sets = []
+        for cal_time in range(self.Rm_times):
+            Rm_single = self.Bm[m]*math.log2(1+self.S[m]*self.calculate_fading(self.stdShadow,self.D[m])/(self.Sigma_square[m] *self.Bm[m] ))
+            Rm_sets.append(Rm_single)
+
+        Rm = sum(Rm_sets)/self.Rm_times
         return Rm
     
     #Calculate the QP value of the video encoder: Qm=am*exp(bm*Rm) 
