@@ -25,7 +25,8 @@ class System_model:
         
         D = [] # vectors of the distance from each vehicles to the server; range from 0.1km to 1.1km
         for m in range(self.M):
-            D.append(random.uniform(0.1,1.1))
+            #D.append(random.uniform(0.1,1.1))
+            D.append(2)
         self.D = D
         
         S = [] # vectors of the transmit power for each vehicle; all 23dBm
@@ -88,7 +89,7 @@ class System_model:
             ###actions_tmp.append(''.join(i[::-1])) #Copy i but inverse 
         self.actions = actions_tmp #action is a list of string actions = ['01','02','10','12','20','21']
 
-        self.epsilon = 0.9 #greedy police
+        self.epsilon = 0.8 #greedy police
         self.q_alpha = 0.1 #learning rate
         self.q_gamma = 0.9 #discount factor
         self.q_table = pd.DataFrame(columns=self.actions, dtype=np.float64) #build an empty q_table
@@ -181,7 +182,11 @@ class System_model:
 
         else:
             F_new = self.calculate_F()
-            reward = F_new - self.F
+            reward = (F_new - self.F) * 50
+            if reward < 0 :
+                reward = reward * 4
+            else:
+                reward = reward * 2
             self.F = F_new
 
         return state_last, reward, if_restart
