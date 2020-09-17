@@ -167,31 +167,31 @@ class System_model:
 
     # update state
     def step(self, action):
-        if_below_limit = False
+        if_restart = False
         state_last = str(self.Bm) #return the last state to the update_q_table function 
         ##try to not change the last state
-        state_last_list = self.Bm #Save the last state to avoid the next state doesn't meet the condition.
+        ##state_last_list = self.Bm #Save the last state to avoid the next state doesn't meet the condition.
         reward = 0
         #Action is like '01' '10' '02' '20' '12' '21', action[0] is addtion; while action[1] is subtraction
         self.Bm[int(action[0])] = self.Bm[int(action[0])] + self.delta_B
         self.Bm[int(action[1])] = self.Bm[int(action[1])] - self.delta_B
         if self.Bm[int(action[1])] < self.B_min:  #The restrictions include the minimum limit of Bm
             reward = -100
-            if_below_limit = True
+            if_restart = True
 
         else:
             F_new = self.calculate_F()
             reward = F_new - self.F
             self.F = F_new
 
-        return state_last, reward, if_below_limit, state_last_list
+        return state_last, reward, if_restart
     
-    ####Back to the initialized state
-    ###def restart(self):
-    ###    for i in range(self.M):
-    ###        self.Bm[i] = self.B_total / self.M
-    ###        self.F = self.calculate_F()
-    ###    return
+    #Back to the initialized state
+    def restart(self):
+        for i in range(self.M):
+            self.Bm[i] = self.B_total / self.M
+            self.F = self.calculate_F()
+        return
         
     #update the q_table
     def learn(self, s, a, r, s_):
