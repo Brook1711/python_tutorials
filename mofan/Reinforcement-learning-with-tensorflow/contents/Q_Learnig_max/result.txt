@@ -1,0 +1,49 @@
+found new arangemaet 'Bm'            :  [686666.6666666666, 666666.6666666666, 646666.6666666666]
+under this arangement, the F is      :  6.017333332929699
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  1.5692247501419843e-10
+found new arangemaet 'Bm'            :  [686666.6666666666, 686666.6666666666, 626666.6666666666]
+under this arangement, the F is      :  6.017333333299789
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  5.270130998269451e-10
+found new arangemaet 'Bm'            :  [686666.6666666666, 686666.6666666666, 626666.6666666666]
+under this arangement, the F is      :  6.017333333333333
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  5.605569342037597e-10
+found new arangemaet 'Bm'            :  [646666.6666666666, 746666.6666666666, 606666.6666666666]
+under this arangement, the F is      :  6.017333333333333
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  5.605569342037597e-10
+found new arangemaet 'Bm'            :  [706666.6666666666, 686666.6666666666, 606666.6666666666]
+under this arangement, the F is      :  6.017333333333333
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  5.605569342037597e-10
+found new arangemaet 'Bm'            :  [646666.6666666666, 686666.6666666666, 666666.6666666666]
+under this arangement, the F is      :  6.017333333333333
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  5.605569342037597e-10
+found new arangemaet 'Bm'            :  [726666.6666666666, 786666.6666666666, 486666.6666666666]
+under this arangement, the F is      :  6.017333333333333
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  5.605569342037597e-10
+found new arangemaet 'Bm'            :  [766666.6666666666, 786666.6666666666, 446666.6666666666]
+under this arangement, the F is      :  6.017333333333333
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  5.605569342037597e-10
+found new arangemaet 'Bm'            :  [766666.6666666666, 826666.6666666666, 406666.6666666666]
+under this arangement, the F is      :  6.017333333333333
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  5.605569342037597e-10
+found new arangemaet 'Bm'            :  [806666.6666666666, 846666.6666666666, 346666.6666666666]
+under this arangement, the F is      :  6.017333333333333
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  5.605569342037597e-10
+found new arangemaet 'Bm'            :  [866666.6666666666, 846666.6666666666, 286666.6666666666]
+under this arangement, the F is      :  6.017333333333333
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  5.605569342037597e-10
+found new arangemaet 'Bm'            :  [866666.6666666666, 846666.6666666666, 286666.6666666666]
+under this arangement, the F is      :  6.017333333333333
+              the original F is      :  6.017333332772776
+compare to the original F , F varies :  5.605569342037597e-10
+episode end
