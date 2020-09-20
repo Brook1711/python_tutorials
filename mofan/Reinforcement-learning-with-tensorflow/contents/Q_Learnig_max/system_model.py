@@ -122,7 +122,7 @@ class System_model:
         #transfer rate sets
         Rm_sets = []
         for cal_time in range(self.Rm_times):
-            Rm_single = self.Bm[m]*math.log2(1+self.S[m]*self.calculate_fading(self.stdShadow,self.D[m])/(self.Sigma_square[m] *self.Bm[m] ))
+            Rm_single = self.Bm[m]*math.log2(1+self.S[m]*self.calculate_fading(self.stdShadow,self.D[m])/(self.Sigma_square[m] *2e6/3.0 ))
             Rm_sets.append(Rm_single)
 
         Rm = sum(Rm_sets)/self.Rm_times
