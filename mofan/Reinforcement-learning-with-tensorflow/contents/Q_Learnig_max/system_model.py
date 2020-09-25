@@ -92,6 +92,7 @@ class System_model:
 
         self.epsilon = 0.8 #greedy police
         self.q_alpha = 0.1 #learning rate
+        #self.q_alpha = 0.5 #learning rate
         self.q_gamma = 0.9 #discount factor
         self.q_table = pd.DataFrame(columns=self.actions, dtype=np.float64) #build an empty q_table
 
@@ -193,6 +194,7 @@ class System_model:
                 reward = reward * 4
             else:
                 reward = reward * 2
+            #reward = F_new
             self.F = F_new
 
         return state_last, reward, if_restart

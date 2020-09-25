@@ -1,3 +1,5 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 from maze_env import Maze
 from RL_brain import DeepQNetwork
 

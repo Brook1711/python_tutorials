@@ -10,9 +10,14 @@ Tensorflow: 1.0
 gym: 0.7.3
 """
 
+
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+#import tensorflow as 
+
+import tensorflow.compat.v1 as tf  #使用1.0版本的方法
+tf.disable_v2_behavior()   #禁用2.0版本的方法
+
 
 np.random.seed(1)
 tf.set_random_seed(1)
@@ -34,11 +39,11 @@ class DeepQNetwork:
             output_graph=False,
     ):
         self.n_actions = n_actions
-        self.n_features = n_features
+        self.n_features = n_features #一个状态下有多少个特征值（eg：长、宽）
         self.lr = learning_rate
         self.gamma = reward_decay
         self.epsilon_max = e_greedy
-        self.replace_target_iter = replace_target_iter
+        self.replace_target_iter = replace_target_iter #隔多少步更换一次
         self.memory_size = memory_size
         self.batch_size = batch_size
         self.epsilon_increment = e_greedy_increment
@@ -48,7 +53,7 @@ class DeepQNetwork:
         self.learn_step_counter = 0
 
         # initialize zero memory [s, a, r, s_]
-        self.memory = np.zeros((self.memory_size, n_features * 2 + 2))
+        self.memory = np.zeros((self.memory_size, n_features * 2 + 2))#记录两个state下的feature，还有action和reward
 
         # consist of [target_net, evaluate_net]
         self._build_net()
@@ -64,7 +69,7 @@ class DeepQNetwork:
             tf.summary.FileWriter("logs/", self.sess.graph)
 
         self.sess.run(tf.global_variables_initializer())
-        self.cost_his = []
+        self.cost_his = [] #记录下来每一步的误差
 
     def _build_net(self):
         # ------------------ build evaluate_net ------------------
@@ -112,20 +117,20 @@ class DeepQNetwork:
                 self.q_next = tf.matmul(l1, w2) + b2
 
     def store_transition(self, s, a, r, s_):
-        if not hasattr(self, 'memory_counter'):
-            self.memory_counter = 0
+        if not hasattr(self, 'memory_counter'): #if hasattr用于检查对象是否有该属性
+            self.memory_counter = 0  #索引memory的行数
 
-        transition = np.hstack((s, [a, r], s_))
+        transition = np.hstack((s, [a, r], s_)) #np.hstack将参数元组的元素数组按水平方向进行叠加
 
         # replace the old memory with new memory
-        index = self.memory_counter % self.memory_size
-        self.memory[index, :] = transition
+        index = self.memory_counter % self.memory_size #取余操作
+        self.memory[index, :] = transition #将这一行全部存下来
 
-        self.memory_counter += 1
+        self.memory_counter += 1 #到下一行，从下一行开始存储
 
-    def choose_action(self, observation):
+    def choose_action(self, observation): #将当前状态输入神经网络，输出每一个action对应的Q值
         # to have batch dimension when feed into tf placeholder
-        observation = observation[np.newaxis, :]
+        observation = observation[np.newaxis, :] #将一维数据observation变成二维数据，从而能够被TensorFlow处理
 
         if np.random.uniform() < self.epsilon:
             # forward feed the observation and get q value for every actions
