@@ -26,7 +26,7 @@ class System_model:
         D = [] # vectors of the distance from each vehicles to the server; range from 0.1km to 1.1km
         for m in range(self.M):
             #D.append(random.uniform(0.1,1.1))
-            D.append(3)
+            D.append(0.4)
         self.D = D
         
         S = [] # vectors of the transmit power for each vehicle; all 23dBm
@@ -123,7 +123,7 @@ class System_model:
         #transfer rate sets
         Rm_sets = []
         for cal_time in range(self.Rm_times):
-            Rm_single = self.Bm[m]*math.log2(1+self.S[m]*self.calculate_fading(self.stdShadow,self.D[m])/(self.Sigma_square[m] *2e6/3.0 ))
+            Rm_single = self.Bm[m]*math.log2(1+self.S[m]*self.calculate_fading(self.stdShadow,self.D[m])/(self.Sigma_square[m] *self.B_total/3.0 ))
             Rm_sets.append(Rm_single)
 
         Rm = sum(Rm_sets)/self.Rm_times
