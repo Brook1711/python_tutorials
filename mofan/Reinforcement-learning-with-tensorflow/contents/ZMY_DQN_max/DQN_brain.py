@@ -1,66 +1,104 @@
 """
-This part of code is the DQN brain, which is a brain of the agent.
-All decisions are made in here.
-Using Tensorflow to build the neural network.
-
-View more on my tutorial page: https://morvanzhou.github.io/tutorials/
-
-Using:
-Tensorflow: 1.0
-gym: 0.7.3
+Initialize the system model and build the A3C model
 """
-
-
 import numpy as np
 import pandas as pd
-#import tensorflow as 
+import random 
+import math 
+from scipy.stats import norm
 
-import tensorflow.compat.v1 as tf  #使用1.0版本的方法
-tf.disable_v2_behavior()   #禁用2.0版本的方法
+import tensorflow.compat.v1 as tf  #use tensorflow 1.0
+tf.disable_v2_behavior()   #forbidden tensorflow 2.0
+np.random.seed(1) # first stack of seeds(every stack have their own random seed)同一堆种子每次生成的随机数相同
+tf.set_random_seed(1) # set every stack have the same seeds 不同Session中的random函数表现出相对协同的特征
 
+class System_A3C_Model:
+     # total power(mw) and bandwidth(Hz) must be changed in run_this file
+    def __init__(self, P_total = 10000, B_total = 200, e_greedy_increment=None) :
+        self.M = 3 # number of vehicles
+        self.K = 3 # number of fames of every vehicles
 
-np.random.seed(1)
-tf.set_random_seed(1)
+        self.B_total = B_total
+        self.P_total = P_total
 
+        self.F = [[0.9, 0.9, 1], [0.5, 0.4, 0.5], [0.1, 0.2, 0]] # importance of each fames, range in[0,1] 
 
-# Deep Q Network off-policy
-class DeepQNetwork:
-    def __init__(
-            self,
-            n_actions,
-            n_features,
-            learning_rate=0.01,
-            reward_decay=0.9,
-            e_greedy=0.9,
-            replace_target_iter=300,
-            memory_size=500,
-            batch_size=32,
-            e_greedy_increment=None,
-            output_graph=False,
-    ):
-        self.n_actions = n_actions
-        self.n_features = n_features #一个状态下有多少个特征值（eg：长、宽）
-        self.lr = learning_rate
-        self.gamma = reward_decay
-        self.epsilon_max = e_greedy
-        self.replace_target_iter = replace_target_iter #隔多少步更换一次
-        self.memory_size = memory_size
-        self.batch_size = batch_size
-        self.epsilon_increment = e_greedy_increment
+        Dm = [] # distance between each vehicles and edge server, range in [0,0.5km] (server cover area) 
+        for m in range(self.M):
+            Dm.append(0.3)
+        self.Dm = Dm
+
+        Pm = [] # power of each vehicles, it's initialized to be eventually distributed
+        for m in range(self.M):
+            Pm.append(self.P_total / self.M)
+        self.Pm = Pm
+
+        Bm = [] # bandwidth of each vehicles, it's initialized to be eventually distributed
+        for m in range(self.M):
+            Bm.append(self.B_total / self.M)
+        self.Bm = Bm
+
+        self.N0 = math.pow(10, -174 / 10.0)  # noise power density(sigma_square) mW/Hz
+
+        self.B_min = self.B_total / 10.0 # lower boundary of Bm
+        self.P_min = self.P_total / 1000.0 # lower boundary of Pm 
+        
+        Hm = [] # total loss and fading of each vehicles
+        for m in range(self.M):
+            Hm.append(self.calculate_fading(self.Dm[m]))
+        self.Hm = Hm
+
+        # model parameters
+        # use in the SSIM
+        # low
+        self.a = -4.247e-10
+        self.b = 5.1
+        self.c = 0.9521
+
+        # high
+        #self.a = -1.627e-8
+        #self.b = 4.243
+        #self.c = 0.9513
+
+        # use in the QP
+        self.alpha = 45.96
+        self.beta = -8.648e-5
+
+        # quantitative order
+        self.M_quant = 2
+
+        # modulation order e.g.:QPSK
+        self.M_modul = 4
+
+        # use in error rate
+        self.A = 2 * (1 - 1 / math.pow(self.M_modul, 0.5)) / math.log2(math.pow(self.M_modul, 0.5))
+        self.B = 3 * math.log2(math.pow(self.M_modul, 0.5)) / (self.M_modul - 1)
+
+        # DQN parameters
+        self.n_actions = 36 # action numbers (6 Pm change + 6 Bm change)
+        self.n_features = 2 # one state has sevaral features(Bm and Pm)
+        self.lr = 0.01 # learning rate
+        self.gamma = 0.9 # reward_decay
+        #self.epsilon_max =  0.9 # e_greedy
+        self.epsilon = 0.9 # e_greedy
+        self.replace_target_iter = 300 # target and evaluate net update interval
+        self.memory_size = 500 # repay memory D size
+        self.batch_size = 32 # minibatch size 
+        self.epsilon_increment = None # greedy change
         self.epsilon = 0 if e_greedy_increment is not None else self.epsilon_max
 
         # total learning step
         self.learn_step_counter = 0
 
-        # initialize zero memory [s, a, r, s_]
-        self.memory = np.zeros((self.memory_size, n_features * 2 + 2))#记录两个state下的feature，还有action和reward
+        # initialize repay memory [s, a, r, s_] as empty
+        self.memory = np.zeros((self.memory_size, self.n_features * 2 + 2))# 2 state features(2*2) and action and reward
 
         # consist of [target_net, evaluate_net]
         self._build_net()
         t_params = tf.get_collection('target_net_params')
         e_params = tf.get_collection('eval_net_params')
         self.replace_target_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
-       
+
         # use sess to activate operation
         self.sess = tf.Session()
 
@@ -73,10 +111,75 @@ class DeepQNetwork:
         #    # tf.train.SummaryWriter soon be deprecated, use following
         #    tf.summary.FileWriter("logs/", self.sess.graph)
 
+
+    """Functions to get reward"""
+    
+    # calculate the total fading
+    def calculate_fading(self, dist):
+        h_pl_db = 148.1 + 37.6 * math.log10(dist) # the path loss(dB)
+        h_sh_db = np.random.randn() * 8 # the shadowing(log-normal distribution)(dB)
+        # To get the normal distribution with mean u and variance x²: x*np.random.randn()+u
+
+        # The envelope of the sum of two orthogonal Gaussian noise signals obeys the Rayleigh distribution.
+        # Get two orthogonal Gaussian functions, one is the real part, another is the imaginary part.
+        ray_array = np.random.randn(2) 
+        h_small = math.pow(ray_array[0], 2)+ math.pow(ray_array[1], 2) # Pr=Pt*h²
+
+        h_large = math.pow(10 , ( -( h_pl_db + h_sh_db) / 10.0)) # Convert minus log to regular form
+
+        h_total = h_small * h_large # the total fading
+        return h_total
+
+    # channel capacity
+    def calculate_rm(self, m):
+        rm = self.Bm[m] * math.log2(1 + self.Pm[m] * self.Hm[m] / (self.N0 * self.Bm[m]))
+        return rm
+
+    # bm and rm
+    def calculate_bm(self, m):
+        bm = self.calculate_rm(m) / math.log2(self.M_quant)
+        return bm
+
+    # QP value
+    def calculate_QP(self, m):
+        QP = self.alpha * math.exp(self.beta * self.calculate_bm(m))
+        return QP
+
+    # SSIM value
+    def calculate_SSIM(self, m):
+        SSIM = self.a * math.pow(self.calculate_QP(m), self.b) + self.c
+        return SSIM
+
+    ### get qm
+    # distortion rate
+    def calculate_qm(self, m):
+        qm = 1 - self.calculate_SSIM(m)
+        return qm
+    
+    ### get pm
+    # error rate
+    def calculate_pm(self, m):
+        Eb = self.Pm[m] * self.Hm[m] / self.calculate_rm(m)        
+        Q = 1 - norm.cdf(math.pow(self.B * 2 * Eb / self.N0, 0.5)) # the inverse of the cumulative density function(Q function)
+        pm = self.A * Q 
+        return pm
+    
+    # reward fuction(total information with importance)
+    def calculate_ukm(self):
+        umk = 0
+        for m in range(self.M):
+            for k in range(self.K):
+                umk = umk + self.F[m][k] * (1 - self.calculate_pm(m)) * (1 - self.calculate_qm(m))
+        return umk
+    
+
+    """Use DQN to get the maximum of umk"""
+
     def _build_net(self):
         # ------------------ build evaluate_net ------------------
-        self.s = tf.placeholder(tf.float32, [None, self.n_features], name='s')  # input
-        self.q_target = tf.placeholder(tf.float32, [None, self.n_actions], name='Q_target')  # for calculating loss
+        self.s = tf.placeholder(tf.float32, [None, self.n_features], name='s')  # input state:row is unsure, columns is 2
+        self.q_target = tf.placeholder(tf.float32, [None, self.n_actions], name='Q_target')  # for calculating loss function
+        
         with tf.variable_scope('eval_net'):
             # c_names(collections_names) are the collections to store variables
             c_names, n_l1, w_initializer, b_initializer = \
@@ -84,17 +187,25 @@ class DeepQNetwork:
                 tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)  # config of layers
 
             # first layer. collections is used later when assign to target net
+            # first layer output is second layer input
             with tf.variable_scope('l1'):
+                # get_variable('name',[shape],<initializer>)
+                # w is n_features*n_l1, b is 1*n_l1
                 w1 = tf.get_variable('w1', [self.n_features, n_l1], initializer=w_initializer, collections=c_names)
                 b1 = tf.get_variable('b1', [1, n_l1], initializer=b_initializer, collections=c_names)
-                l1 = tf.nn.relu(tf.matmul(self.s, w1) + b1)
+                l1 = tf.nn.relu(tf.matmul(self.s, w1) + b1)# relu is an activation fuction ReLU
+            
 
             # second layer. collections is used later when assign to target net
+            # second layer output is action
             with tf.variable_scope('l2'):
+                # get_variable('name',[shape],<initializer>)
+                # w is n_l1*n_actions, b is 1*n_actions
                 w2 = tf.get_variable('w2', [n_l1, self.n_actions], initializer=w_initializer, collections=c_names)
                 b2 = tf.get_variable('b2', [1, self.n_actions], initializer=b_initializer, collections=c_names)
                 self.q_eval = tf.matmul(l1, w2) + b2
-
+        
+        # define loss funtion to update the evaluate network
         with tf.variable_scope('loss'):
             self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval))
         with tf.variable_scope('train'):
@@ -117,20 +228,21 @@ class DeepQNetwork:
                 w2 = tf.get_variable('w2', [n_l1, self.n_actions], initializer=w_initializer, collections=c_names)
                 b2 = tf.get_variable('b2', [1, self.n_actions], initializer=b_initializer, collections=c_names)
                 self.q_next = tf.matmul(l1, w2) + b2
-
+    
+    # define the repay memeory D
     def store_transition(self, s, a, r, s_):
-        if not hasattr(self, 'memory_counter'): #if hasattr用于检查对象是否有该属性
+        if not hasattr(self, 'memory_counter'): # use if hasattr to check whether object has the attibute
             self.memory_counter = 0  #索引memory的行数
 
-        transition = np.hstack((s, [a, r], s_)) #np.hstack将参数元组的元素数组按水平方向进行叠加
+        transition = np.hstack((s, [a, r], s_)) #np.hstack 按列存储样本，每个样本为一个行向量
 
         # replace the old memory with new memory
-        index = self.memory_counter % self.memory_size #取余操作
-        self.memory[index, :] = transition #将这一行全部存下来
+        index = self.memory_counter % self.memory_size # 取余操作
+        self.memory[index, :] = transition # 将这一行全部存下来
 
-        self.memory_counter += 1 #到下一行，从下一行开始存储
+        self.memory_counter += 1 # 到下一行，从下一行开始存储
 
-    def choose_action(self, observation): #将当前状态输入神经网络，输出每一个action对应的Q值
+    def choose_action(self, observation): # 将当前状态输入神经网络，输出每一个action对应的Q值
         # to have batch dimension when feed into tf placeholder
         observation = observation[np.newaxis, :] #将一维数据observation变成二维数据，从而能够被TensorFlow处理
 
@@ -138,9 +250,13 @@ class DeepQNetwork:
             # forward feed the observation and get q value for every actions
             actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
             action = np.argmax(actions_value)
+            # np.argmax() get the max index 
         else:
             action = np.random.randint(0, self.n_actions)
         return action
+    
+    def step():
+        
 
     def learn(self):
         # check to replace target parameters
@@ -215,4 +331,26 @@ class DeepQNetwork:
         plt.show()
 
 
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+        
+
+
+
+
+ 
+
+  
 
