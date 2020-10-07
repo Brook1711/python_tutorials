@@ -179,6 +179,7 @@ class System_model:
         state_last = str(self.Bm) #return the last state to the update_q_table function 
         ##try to not change the last state
         ##state_last_list = self.Bm #Save the last state to avoid the next state doesn't meet the condition.
+        ##state_last_list = self.Pm
         reward = 0
         #Action is like '01' '10' '02' '20' '12' '21', action[0] is addtion; while action[1] is subtraction
         self.Bm[int(action[0])] = self.Bm[int(action[0])] + self.delta_B
