@@ -18,32 +18,45 @@ num_actions = 0 #record the number of actions
 #best_Pm = Mymodel.Pm # the original Pm[]  
 #plot_umk = [first_umk] # record every umk
 #num_actions = 0 #record the number of actions
+#max_step = 100
 
-step = 0
+        
+state = []
+for m in range(Mymodel.M):
+    state.append(Mymodel.Bm[m])
+for m in range(Mymodel.M):
+    state.append(Mymodel.Pm[m])
 
-for episode in range(10):
+state_array = np.array(state) # record the Bm and Pm as an array
+
+for episode in range(15):
     while True:
+        
+        #step = 0 #record the number of actions
+
         for m in range(Mymodel.M):
             # 每个action前先算一下信道总增益h_total，
             # 因为要保证在一个action中h_total相等，防止在一个action中多次调用h函数计算
             # Mymodel.Hm.append(Mymodel.calculate_fading(Mymodel.Dm[m])) # wrong !!! 
             Mymodel.Hm[m] = Mymodel.calculate_fading(Mymodel.Dm[m])
-        
-        state = []
-        for m in range(Mymodel.M):
-            state.append(Mymodel.Bm[m])
-        for m in range(Mymodel.M):
-            state.append(Mymodel.Pm[m])
-        
-        state_array = np.array(state)
+            # Mymodel.Hm[m] = 3.717e-13
+
         # (1).Use current state and evaluate net to choose action(string) 
         action, action_num = Mymodel.choose_action(state_array)
        
         # (2).Use action(string) and present state to get the next state and reward
         state_last_array, reward, if_restart = Mymodel.step(action)
 
+        for m in range(Mymodel.M):
+            state_array[m] = Mymodel.Bm[m]
+        for m in range(Mymodel.M):
+            state_array[m + 3] = Mymodel.Pm[m]  
+
         # (3).Record the transition in repay memory
         Mymodel.store_transition(state_last_array, action_num, reward, state_array)
+
+        if (num_actions > 200) and (num_actions % 5 == 0):
+            Mymodel.learn()
 
         # Record the highest umk value and Bm[], Pm[]
         # The self.parameters are global variables which is changing during the whole process
@@ -62,36 +75,34 @@ for episode in range(10):
             best_Bm = str(Mymodel.Bm)
             best_Pm = str(Mymodel.Pm)
             best_umk = float(Mymodel.umk)
-
-        #(3).Use s, a, s_, r to update the q table  
-        ##Mymodel.learn()
-        if (step > 200) and (step % 5 == 0):
-            Mymodel.learn()
-        
-        #This step must behind the update_q_table, 
-        #because the state that is below the limit should also be recorded in the q table
-        #if if_below_limit:
-        #    my_model.Bm = state_last_list
-        
-        ###print(best_F)
-        ###print(best_Bm)
-        ###print("episode end")
         
         #Prepare for the plot
         plot_umk.append(Mymodel.umk)  
+        #step = step + 1 
         num_actions = num_actions + 1
+
+        #if num_actions == 3000:
+        #    Mymodel.epsilon = 0.95
+        
+        #if num_actions == 4000:
+        #    Mymodel.epsilon = 1
         
         if if_restart:
             Mymodel.restart()
             print("episode end")
             break
 
-        step = step + 1
+
+
+
+        
+        
 
 print("*****     " , best_umk - first_umk)
 print(best_Bm)
 print(best_Pm)
 print(num_actions)
+print(Mymodel.epsilon)
 
 """Draw the convergence curve""" 
 num_actions_list = []

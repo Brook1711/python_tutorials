@@ -15,7 +15,7 @@ tf.set_random_seed(1) # set every stack have the same seeds 不同Session中的r
 
 class System_DQN_Model:
      # total power(mw) and bandwidth(Hz) must be changed in run_this file
-    def __init__(self, P_total = 10000, B_total = 200, e_greedy_increment=None) :
+    def __init__(self, P_total = 10000, B_total = 200) :
         self.M = 3 # number of vehicles
         self.K = 3 # number of fames of every vehicles
 
@@ -33,20 +33,20 @@ class System_DQN_Model:
         Pm = [] # power of each vehicles, it's initialized to be eventually distributed
         for m in range(self.M):
             Pm.append(self.P_total / self.M)
-        self.Pm = Pm
-
+        # self.Pm = Pm
+        self.Pm = [1/8* P_total, 3/8 *P_total, 1/2 * P_total]
         Bm = [] # bandwidth of each vehicles, it's initialized to be eventually distributed
         for m in range(self.M):
             Bm.append(self.B_total / self.M)
-        self.Bm = Bm
-
+        # self.Bm = Bm
+        self.Bm = [1/8 * B_total, 3/8 * B_total, 1/2 * B_total]
         self.N0 = math.pow(10, -174 / 10.0)  # noise power density(sigma_square) mW/Hz
 
-        self.B_min = self.B_total / 10.0 # lower boundary of Bm
+        self.B_min = self.B_total / 100.0 # lower boundary of Bm
         self.P_min = self.P_total / 1000.0 # lower boundary of Pm 
 
-        self.deltaB = self.B_total / 100.0 # the mini change of Bm
-        self.deltaP = self.P_total / 100.0 # the mini change of Pm
+        self.deltaB = self.B_total / 1000.0 # the mini change of Bm
+        self.deltaP = self.P_total / 1000.0 # the mini change of Pm
         
         Hm = [] # total loss and fading of each vehicles
         for m in range(self.M):
@@ -84,13 +84,13 @@ class System_DQN_Model:
         self.n_features = 2*3 # one state has sevaral features(Bm and Pm)
         self.lr = 0.01 # learning rate
         self.gamma = 0.9 # reward_decay
-        self.epsilon_max =  0.9 # e_greedy
-        #self.epsilon = 0.9 # e_greedy
-        self.replace_target_iter = 300 # target and evaluate net update interval
+        #self.epsilon_max =  0.9 # e_greedy, org 0.9
+        self.epsilon = 0.9 # e_greedy
+        self.replace_target_iter = 100 # target and evaluate net update interval, org 300
         self.memory_size = 500 # repay memory D size
         self.batch_size = 32 # minibatch size 
-        self.epsilon_increment = e_greedy_increment # greedy change
-        self.epsilon = 0 if e_greedy_increment is not None else self.epsilon_max
+        #self.epsilon_increment = e_greedy_increment # greedy change
+        #self.epsilon = 0 if e_greedy_increment is not None else self.epsilon_max
 
         # total learning step
         self.learn_step_counter = 0
@@ -307,8 +307,8 @@ class System_DQN_Model:
         self.Pm[int(action[2])] = self.Pm[int(action[2])] + self.deltaP
         self.Pm[int(action[3])] = self.Pm[int(action[3])] - self.deltaP
         if self.Bm[int(action[1])] < self.B_min or self.Pm[int(action[3])] < self.P_min: 
-            #reward = -100
-            reward = -1
+            reward = -100
+            #reward = -1
             if_restart = True
         else:
             umk_new = self.calculate_umk()
@@ -409,7 +409,7 @@ class System_DQN_Model:
         self.cost_his.append(self.cost)
 
         # increasing epsilon
-        self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
+        #self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.learn_step_counter += 1
 
         return
