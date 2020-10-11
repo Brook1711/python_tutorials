@@ -29,7 +29,7 @@ for m in range(Mymodel.M):
 
 state_array = np.array(state) # record the Bm and Pm as an array
 
-for episode in range(15):
+for episode in range(100):
     while True:
         
         #step = 0 #record the number of actions
@@ -92,11 +92,6 @@ for episode in range(15):
             print("episode end")
             break
 
-
-
-
-        
-        
 
 print("*****     " , best_umk - first_umk)
 print(best_Bm)
