@@ -34,13 +34,13 @@ class System_DQN_Model:
         for m in range(self.M):
             Pm.append(self.P_total / self.M)
         self.Pm = Pm
-        #self.Pm = [1/8* P_total, 3/8 *P_total, 1/2 * P_total]
+        self.Pm = [1/8* P_total, 3/8 *P_total, 1/2 * P_total]
         
         Bm = [] # bandwidth of each vehicles, it's initialized to be eventually distributed
         for m in range(self.M):
             Bm.append(self.B_total / self.M)
         self.Bm = Bm
-        #self.Bm = [1/8 * B_total, 3/8 * B_total, 1/2 * B_total]
+        self.Bm = [1/8 * B_total, 3/8 * B_total, 1/2 * B_total]
         
         self.N0 = math.pow(10, -174 / 10.0)  # noise power density(sigma_square) mW/Hz
 
@@ -87,7 +87,7 @@ class System_DQN_Model:
         self.lr = 0.01 # learning rate
         self.gamma = 0.9 # reward_decay
         #self.epsilon_max =  0.9 # e_greedy, org 0.9
-        self.epsilon = 0.9 # e_greedy
+        self.epsilon = 0.8 # e_greedy,org 0.9
         self.replace_target_iter = 300 # target and evaluate net update interval
         self.memory_size = 500 # repay memory D size
         self.batch_size = 32 # minibatch size 
@@ -326,6 +326,18 @@ class System_DQN_Model:
         return state_last_array, reward, if_restart
     
     #--------- not satisfy the boundary condition, so back to the initialized state
+    #def restart(self):
+    #    self.Bm[0] = random.uniform(self.B_min, (self.B_total-2*self.B_min))
+    #    self.Bm[1] = random.uniform(self.B_min, (self.B_total-self.Bm[0]-self.B_min))
+    #    self.Bm[2] = self.B_total - self.Bm[0] - self.Bm[1]
+
+    #    self.Pm[0] = random.uniform(self.P_min, (self.P_total-2*self.P_min))
+    #    self.Pm[1] = random.uniform(self.P_min, (self.P_total-self.Pm[0]-self.P_min))
+    #    self.Pm[2] = 10000 - self.Pm[0] - self.Pm[1]
+
+    #    self.umk = self.calculate_umk()
+    #    return
+    
     def restart(self):
         for i in range(self.M):
             self.Bm[i] = self.B_total / self.M
