@@ -9,38 +9,181 @@ Using:
 tensorflow 1.8.0
 gym 0.10.5
 """
-
 import multiprocessing
 import threading
 #import tensorflow as tf
 import tensorflow.compat.v1 as tf # use tensorflow 1.0
 tf.disable_v2_behavior() # forbidden tensorflow 2.0
 import numpy as np
-import gym
+#import gym
 import os
 import shutil
 import matplotlib.pyplot as plt
+import random 
+import math 
+import itertools
+from scipy.stats import norm
 
-GAME = 'Pendulum-v0'
+#GAME = 'Pendulum-v0'
 OUTPUT_GRAPH = True
 LOG_DIR = './log'
+
 N_WORKERS = multiprocessing.cpu_count() # the number of thread equals to the number of cpu
-MAX_EP_STEP = 200 # maximum step in one episode
-MAX_GLOBAL_EP = 2000 # 
+MAX_EP_STEP = 200 # maximum step in one episode  org.200
+MAX_GLOBAL_EP = 2000 # maximum of the total step  org.2000
 GLOBAL_NET_SCOPE = 'Global_Net'
-UPDATE_GLOBAL_ITER = 10
+UPDATE_GLOBAL_ITER = 10 # the interval of the change
 GAMMA = 0.9
 ENTROPY_BETA = 0.01 # try more actions(to expand our action range)
-LR_A = 0.0001 # learning rate for actor
-LR_C = 0.001 # learning rate for critic
-GLOBAL_RUNNING_R = []
-GLOBAL_EP = 0
+LR_A = 0.0001 # learning rate for actor(gradients) org.0.0001
+LR_C = 0.001 # learning rate for critic(gradients) org.0.001
+GLOBAL_RUNNING_R = [] 
+GLOBAL_EP = 0 
 
-env = gym.make(GAME)
+#env = gym.make(GAME)
 
-N_S = env.observation_space.shape[0] # number of state in state space
-N_A = env.action_space.shape[0] # number of action in action space
-A_BOUND = [env.action_space.low, env.action_space.high] # bound of output action
+#N_S = env.observation_space.shape[0] # number of state in state space
+#N_A = env.action_space.shape[0] # number of action in action space
+#A_BOUND = [env.action_space.low, env.action_space.high] # bound of output action
+
+N_S = 6 # number of state in state space(3Bm+3Pm)
+N_A = 4 # number of action in action space(only change the B0,B1,P0,P1)
+
+
+# total power(mw) and bandwidth(Hz) must be changed in run_this file
+P_total = 10000
+B_total = 200
+M = 3 # number of vehicles
+K = 3 # number of fames of every vehicles
+
+
+F = [[0.9, 0.9, 1], [0.5, 0.4, 0.5], [0.1, 0.2, 0]] # importance of each fames, range in[0,1] 
+# F = [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]]
+
+Dm = [] # distance between each vehicles and edge server, range in [0,0.5km] (server cover area) 
+for m in range(M):
+    Dm.append(0.3)
+
+Pm = [] # power of each vehicles, it's initialized to be eventually distributed
+for m in range(M):
+    Pm.append(P_total / M)
+# Pm = [1/8* P_total, 3/8 *P_total, 1/2 * P_total]
+        
+Bm = [] # bandwidth of each vehicles, it's initialized to be eventually distributed
+for m in range(M):
+    Bm.append(B_total / M)
+# Bm = [1/8 * B_total, 3/8 * B_total, 1/2 * B_total]
+        
+N0 = math.pow(10, -174 / 10.0)  # noise power density(sigma_square) mW/Hz
+
+B_min = B_total / 10.0 # lower boundary of Bm
+P_min = P_total / 100.0 # lower boundary of Pm 
+
+# deltaB = B_total / 100.0 # the mini change of Bm
+# deltaP = P_total / 100.0 # the mini change of Pm
+
+# model parameters
+# use in the SSIM
+# low
+a = -4.247e-10
+b = 5.1
+c = 0.9521
+
+# high
+# a = -1.627e-8
+# b = 4.243
+# c = 0.9513
+
+# use in the QP
+alpha = 45.96
+beta = -8.648e-5
+
+# quantitative order
+M_quant = 2
+
+# modulation order e.g.:QPSK
+M_modul = 4
+
+# use in error rate
+A = 2 * (1 - 1 / math.pow(M_modul, 0.5)) / math.log2(math.pow(M_modul, 0.5))
+B = 3 * math.log2(math.pow(M_modul, 0.5)) / (M_modul - 1)
+
+# bound of output action  # array([-2.], dtype=float32)
+# the B0 and B1 is in one distribution
+#def calculate_A_BOUND(Bm_0, Pm_0):
+#    A_BOUND = [np.array([B_min, B_min, P_min, P_min]), np.array([(B_total-2*B_min), (B_total-Bm_0-B_min), (P_total-2*P_min), (P_total-Pm_0-P_min)])]
+#    return A_BOUND
+
+#A_BOUND = calculate_A_BOUND(Bm[0],Pm[0]) 
+
+A_BOUND = [np.array([B_min, B_min, P_min, P_min]), np.array([5*B_min, 3*B_min, 50*P_min, 30*P_min])]
+
+# calculate the total fading
+def calculate_fading(dist):
+    h_pl_db = 148.1 + 37.6 * math.log10(dist) # the path loss(dB)
+    h_sh_db = np.random.randn() * 8 # the shadowing(log-normal distribution)(dB)
+    # To get the normal distribution with mean u and variance x²: x*np.random.randn()+u
+
+    # The envelope of the sum of two orthogonal Gaussian noise signals obeys the Rayleigh distribution.
+        # Get two orthogonal Gaussian functions, one is the real part, another is the imaginary part.
+    ray_array = np.random.randn(2) 
+    h_small = math.pow(ray_array[0], 2)+ math.pow(ray_array[1], 2) # Pr=Pt*h²
+
+    h_large = math.pow(10 , ( -( h_pl_db + h_sh_db) / 10.0)) # Convert minus log to regular form
+
+    h_total = h_small * h_large # the total fading
+    return h_total
+
+Hm = [] # total loss and fading of each vehicles
+for m in range(M):
+    Hm.append(calculate_fading(Dm[m]))
+
+# channel capacity
+def calculate_rm(m):
+    rm = Bm[m] * math.log2(1 + Pm[m] * Hm[m] / (N0 * Bm[m]))
+    return rm
+
+# bm and rm
+def calculate_bm(m):
+    bm = calculate_rm(m) / math.log2(M_quant)
+    return bm
+
+# QP value
+def calculate_QP(m):
+    QP = alpha * math.exp(beta * calculate_bm(m))
+    return QP
+
+    # SSIM value
+def calculate_SSIM(m):
+    SSIM = a * math.pow(calculate_QP(m), b) + c
+    return SSIM
+
+### get qm
+# distortion rate
+def calculate_qm(m):
+    qm = 1 - calculate_SSIM(m)
+    return qm
+    
+### get pm
+# error rate
+def calculate_pm(m):
+    Eb = Pm[m] * Hm[m] / calculate_rm(m) 
+    Q = 1 - norm.cdf(math.pow(B * 2 * Eb / N0, 0.5)) # the inverse of the cumulative density function(Q function)
+    pm = A * Q 
+    return pm
+    
+# reward fuction(total information with importance)
+def calculate_umk():
+    umk = 0
+    for m in range(M):
+        for k in range(K):
+            umk = umk + F[m][k] * (1 - calculate_pm(m)) * (1 - calculate_qm(m))
+    return umk
+
+# calculate umk
+best_umk = calculate_umk()
+best_Bm = Bm
+best_Pm = Pm
 
 """ define the global and local actor-critics"""
 class ACNet(object):
@@ -71,9 +214,11 @@ class ACNet(object):
 
                 #------get the action's distribution------#
                 with tf.name_scope('wrap_a_out'):
+                    #A_BOUND = calculate_A_BOUND(Bm[0],Pm[0]) 
                     mu, sigma = mu * A_BOUND[1], sigma + 1e-4
                 # normal distribution of parameters: mu is the mean, sigma is the std deviation.
                 normal_dist = tf.distributions.Normal(mu, sigma)
+                tf.print(mu)
                 
                 #------maximum actor net's loss function------#
                 with tf.name_scope('a_loss'):
@@ -85,8 +230,12 @@ class ACNet(object):
                 
                 ##------choose action w.r.t local parameters------##
                 with tf.name_scope('choose_a'):
+                    #A_BOUND = calculate_A_BOUND(Bm[0],Pm[0]) 
                     self.A = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=[0, 1]), A_BOUND[0], A_BOUND[1])
-                
+                    #self.A_B1 = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=[0, 1]), A_BOUND_B1[0], A_BOUND_B1[1])
+                    #self.A_P0 = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=[0, 1]), A_BOUND_P0[0], A_BOUND_P0[1])
+                    #self.A_P1 = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=[0, 1]), A_BOUND_P1[0], A_BOUND_P1[1])
+
                 ##------get gradients of a_loss and c_loss w.r.t local parameters------##
                 with tf.name_scope('local_grad'):
                     self.a_grads = tf.gradients(self.a_loss, self.a_params)
@@ -136,7 +285,7 @@ class ACNet(object):
 class Worker(object):
     ####------initialize environment and global network------####
     def __init__(self, name, globalAC):
-        self.env = gym.make(GAME).unwrapped
+        #self.env = gym.make(GAME).unwrapped
         self.name = name
         self.AC = ACNet(name, globalAC) # initialize the local ACNet w.r.t global parameters
     
@@ -147,7 +296,14 @@ class Worker(object):
         buffer_s, buffer_a, buffer_r = [], [], [] # record the s, a, r, similiar to the Repay Memory
         
         while not COORD.should_stop() and GLOBAL_EP < MAX_GLOBAL_EP:
-            s = self.env.reset() # get the state 
+            state = []
+            for m in range(M):
+                state.append(Bm[m])
+            for m in range(M):
+                state.append(Pm[m])
+            s = np.array(state) # record the Bm and Pm as an array
+
+            #s = self.env.reset() # get the state 
             ep_r = 0 # sum up the total reward in one episode 
             
             ###------actor net: choose action, get reward and next state------###
@@ -155,7 +311,7 @@ class Worker(object):
                 # if self.name == 'W_0':
                 #     self.env.render()
                 a = self.AC.choose_action(s)  # choose action
-                s_, r, done, info = self.env.step(a) # get next step and reward and if_it's_terminal
+                s_, r, done = self.step(a) # get next step and reward and if_it's_terminal
                 done = True if ep_t == MAX_EP_STEP - 1 else False # until reach the maxmum of one episode's step
                 ep_r += r
                 buffer_s.append(s)
@@ -198,6 +354,69 @@ class Worker(object):
                           )
                     GLOBAL_EP += 1
                     break
+
+    ####------input a, get s_, r------####
+    def step(self, action):
+        global Bm, Pm, best_umk, best_Bm, best_Pm, Hm
+        if_restart = False
+        #state_last = []
+        #for m in range(M):
+        #    state_last.append(Bm[m])
+        #for m in range(M):
+        #    state_last.append(Pm[m])
+        #state_last_array = np.array(state_last)
+
+        reward = 0
+        for m in range(M):
+            global Hm
+            Hm[m]= calculate_fading(Dm[m])
+        umk_old = calculate_umk()
+
+        Bm[0] = action[0]
+        Bm[1] = action[1]
+        Bm[2] = B_total - Bm[0] - Bm[1]
+        Pm[0] = action[2]
+        Pm[1] = action[3]
+        Pm[2] = P_total - Pm[0] - Pm[1] 
+
+        state_next = []
+        for m in range(M):
+            state_next.append(Bm[m])
+        for m in range(M):
+            state_next.append(Pm[m])
+        state_next_array = np.array(state_next)
+    
+        #if self.Bm[int(action[1])] < self.B_min or self.Pm[int(action[3])] < self.P_min: 
+        #    reward = -100
+        #    #reward = -1
+        #    if_restart = True
+        #else:
+        for m in range(M):
+            Hm[m] = calculate_fading(Dm[m])
+        
+        umk_new = calculate_umk()
+        #reward = (umk_new - umk_old) * 50
+        reward = (umk_new) * 50
+        if reward < 0 :
+            reward = reward * 4
+            #reward = reward * 2
+        else:
+            reward = reward * 2
+            #reward = umk_new
+            #umk = umk_new
+        
+        if umk_new >= best_umk:
+            print("**************************arrangement found*******************************")
+            print("       found new arrangemant 'Bm'       :  " + str(Bm))
+            print("       found new arrangemant 'Pm'       :  " + str(Pm))
+            print("   under this arrangement, the umk is   :  " + str(umk_new))
+
+            # iteration of F & best_Bm
+            best_Bm = Bm
+            best_Pm = Pm
+            best_umk = umk_new
+
+        return state_next_array, reward, if_restart
 
 if __name__ == "__main__":
     SESS = tf.Session()

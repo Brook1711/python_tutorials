@@ -177,38 +177,39 @@ print(Mymodel.epsilon)
 """Draw the convergence curve""" 
 
 # smooth the figure
-smooth_dot_y = [] # record every average y
-start = 0 # record the window's start, slide it in one step in every loop 
-win = 100 # window size
+#smooth_dot_y = [] # record every average y
+#start = 0 # record the window's start, slide it in one step in every loop 
+#win = 100 # window size
 
-for i in range(num_actions+1-win): # loop number is total actions number plus one minus window size
-    temp_store_y = Queue(maxsize = win) # defne the window as a queue
-    for count in range(win): # record the y in the window
-        temp_store_y.put( plot_umk[count + start] )
-    temp_sum = 0
-    for count in range(win): # sum up all the y in the window
-        temp_sum = temp_sum + temp_store_y.queue[count]
-    smooth_dot_y.append(temp_sum / win)
-    temp_store_y.get() # output the "first in" number
-    start = start + 1 #slide the window in one step
+#for i in range(num_actions+1-win): # loop number is total actions number plus one minus window size
+#    temp_store_y = Queue(maxsize = win) # defne the window as a queue
+#    for count in range(win): # record the y in the window
+#        temp_store_y.put( plot_umk[count + start] )
+#    temp_sum = 0
+#    for count in range(win): # sum up all the y in the window
+#        temp_sum = temp_sum + temp_store_y.queue[count]
+#    smooth_dot_y.append(temp_sum / win)
+#    temp_store_y.get() # output the "first in" number
+#    start = start + 1 #slide the window in one step
 
-
-#smooth = spy.savgol_filter(x, 553, 3)
-#plt.plot(smooth,y,'g-')
 #num_actions_list = []
-#for i in range (num_actions + 1):
+#for i in range (num_actions+1-win):
 #    num_actions_list.append(i)
 
-#fig = plt.figure()
 #x = num_actions_list
-#y = plot_umk
+#y = smooth_dot_y
 
 num_actions_list = []
-for i in range (num_actions+1-win):
+sum_y = 0
+aver_y = []
+for i in range (num_actions + 1):
     num_actions_list.append(i)
+    sum_y = sum_y + plot_umk[i]
+    aver_y.append(sum_y/(i+1)) 
 
+fig = plt.figure()
 x = num_actions_list
-y = smooth_dot_y
+y = aver_y
 
 fig = plt.figure()
 plt.plot(x, y, 'g-')

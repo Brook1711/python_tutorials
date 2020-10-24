@@ -8,7 +8,9 @@ View more on my tutorial page: https://morvanzhou.github.io/
 """
 
 import multiprocessing as mp
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf  #use tensorflow 1.0
+tf.disable_v2_behavior()   #forbidden tensorflow 2.0
 import numpy as np
 import gym, time
 import matplotlib.pyplot as plt

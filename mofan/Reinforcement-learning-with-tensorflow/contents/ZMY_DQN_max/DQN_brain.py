@@ -33,13 +33,13 @@ class System_DQN_Model:
         Pm = [] # power of each vehicles, it's initialized to be eventually distributed
         for m in range(self.M):
             Pm.append(self.P_total / self.M)
-        self.Pm = Pm
+        #self.Pm = Pm
         self.Pm = [1/8* P_total, 3/8 *P_total, 1/2 * P_total]
         
         Bm = [] # bandwidth of each vehicles, it's initialized to be eventually distributed
         for m in range(self.M):
             Bm.append(self.B_total / self.M)
-        self.Bm = Bm
+        #self.Bm = Bm
         self.Bm = [1/8 * B_total, 3/8 * B_total, 1/2 * B_total]
         
         self.N0 = math.pow(10, -174 / 10.0)  # noise power density(sigma_square) mW/Hz
