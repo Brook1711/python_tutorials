@@ -61,7 +61,8 @@ class System_model:
         Bm = [] # band allocation; it's initialized to be evenly distributed
         for m in range(self.M):
             Bm.append(self.B_total / self.M)
-        self.Bm = Bm
+        #self.Bm = Bm
+        self.Bm = [1/8 * B_total, 3/8 * B_total, 1/2 * B_total]
 
         #self.Rm_times = 300
         #model parameters; it's used in formula calculation

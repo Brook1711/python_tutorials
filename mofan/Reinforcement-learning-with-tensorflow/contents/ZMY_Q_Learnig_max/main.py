@@ -1,6 +1,7 @@
 import system_model
 import matplotlib.pyplot as plt
-# 2020/9/20
+import codecs
+# 2020/10/28
 my_model = system_model.System_model(2000) #Create an object of the class, the total bandwidth is 2 KHz
 
 print(1)
@@ -15,7 +16,7 @@ total_num_actions = 0 #record the number of actions
 in_step = 0.049999
 max_step = 400
 
-for episode in range(10):
+for episode in range(100):
     #while True:
     num_actions = 0 #record the number of actions
     while True:
@@ -53,10 +54,6 @@ for episode in range(10):
         if if_below_limit:
             my_model.Bm = state_last_list
         
-        ###print(best_F)
-        ###print(best_Bm)
-        ###print("episode end")
-        
         #Prepare for the plot
         plot_F.append(my_model.F)  
         num_actions = num_actions + 1
@@ -70,11 +67,7 @@ for episode in range(10):
         #    print("episode end")
         #    break
         if num_actions>=max_step:
-            break
-
-
-
-    
+            break    
 
 print("The best F:  " , best_F)
 print("The best Bm:  " , best_Bm)
@@ -82,13 +75,25 @@ print(total_num_actions)
 print(my_model.epsilon)
 
 """Draw the convergence curve""" 
+# record the data 
 num_actions_list = []
-for i in range (total_num_actions+1):
+sum_y = 0
+aver_y = []
+for i in range (total_num_actions + 1):
     num_actions_list.append(i)
+    sum_y = sum_y + plot_F[i]
+    aver_y.append(sum_y/(i+1)) 
+
+x = num_actions_list
+y = aver_y
+
+points_tulpe = list(zip(x, y))
+#print(points_tulpe)
+f = codecs.open('points_data.txt','w')       # w 表示写
+f.writelines(str(points_tulpe)+'\n')          # 将元组写入文件
+
 
 fig = plt.figure()
-x = num_actions_list
-y = plot_F
 plt.ylim([3, 6])
 plt.plot(x, y, 'g-')
 plt.xlabel('step of actions')
@@ -97,15 +102,3 @@ plt.title('convergence curve')
 plt.show()
 
 
-# 前面省略，从下面直奔主题，举个代码例子：怎么把点（x，y）变成字符串然后才能输出，
-data = {}
-for i in range(len(x)):
-    data[str(x[i])] = str(y[i])
-    #data = data + (str(x[i]),str(y[i]))
-
-# 这个是
-result2txt=str(data)          # data是前面运行出的数据，先将其转为字符串才能写入 
-print(result2txt)
-with open('dots.txt','a') as file_handle:   # .txt可以不自己新建,代码会自动新建
-    file_handle.write(result2txt)     # 写入
-    file_handle.write('\n')         # 有时放在循环里面需要自动转行，不然会覆盖上一条数据

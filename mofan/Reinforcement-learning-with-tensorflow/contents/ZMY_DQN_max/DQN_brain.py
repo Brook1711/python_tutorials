@@ -15,7 +15,8 @@ tf.set_random_seed(1) # set every stack have the same seeds 不同Session中的r
 
 class System_DQN_Model:
      # total power(mw) and bandwidth(Hz) must be changed in run_this file
-    def __init__(self, P_total = 10000, B_total = 200) :
+    def __init__(self, P_total = 10000, B_total = 200) : 
+        tf.reset_default_graph() # prepare to build 4 objects
         self.M = 3 # number of vehicles
         self.K = 3 # number of fames of every vehicles
 
@@ -314,7 +315,8 @@ class System_DQN_Model:
             if_restart = True
         else:
             umk_new = self.calculate_umk()
-            reward = (umk_new - self.umk) * 50
+            #reward = (umk_new - self.umk) * 50
+            reward = umk_new
             if reward < 0 :
                 reward = reward * 4
                 #reward = reward * 2
@@ -427,6 +429,9 @@ class System_DQN_Model:
         self.learn_step_counter += 1
 
         return
+    
+    #def _del_(self):
+    #    print("*********release the object*************")
 
     #def plot_cost(self):
     #    import matplotlib.pyplot as plt
