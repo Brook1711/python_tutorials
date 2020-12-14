@@ -1,5 +1,5 @@
 """
-Initialize the system model and build the A3C model
+Initialize the system model and build the DQN model
 """
 import numpy as np
 import pandas as pd
@@ -151,7 +151,6 @@ class System_DQN_Model:
         # calculate umk
         self.umk = self.calculate_umk()
 
-
     """Functions to get reward"""
     
     # calculate the total fading
@@ -211,7 +210,6 @@ class System_DQN_Model:
             for k in range(self.K):
                 umk = umk + self.F[m][k] * (1 - self.calculate_pm(m)) * (1 - self.calculate_qm(m))
         return umk
-    
 
     """ Use DQN to get the maximum of umk """
 

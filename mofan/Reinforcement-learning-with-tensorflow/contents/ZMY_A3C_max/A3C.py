@@ -24,7 +24,7 @@ import math
 import itertools
 from scipy.stats import norm
 
-"""System hyperparameters"""
+"""System parameters"""
 # total power(mw) and bandwidth(Hz) must be changed in run_this file
 P_total = 10000
 B_total = 200
@@ -303,7 +303,9 @@ class Worker(object):
         self.Pm_thread[2] = P_total - self.Pm_thread[0] - self.Pm_thread[1] 
         
         if self.Bm_thread[2] < B_min or self.Pm_thread[2] < P_min: 
-            reward = -10  # org.-10
+            reward = int(self.Bm_thread[2]) - int(B_min)+int(self.Pm_thread[2]) - int(P_min)# org.-10
+            reward = reward/1000
+            # reward = -int(math.pow(reward, 0.5))
             #if_restart = True
             #for i in range (M): # back to the last state
             #    self.Bm_thread[i] = state_record[i]
@@ -346,15 +348,16 @@ class Worker(object):
         buffer_s, buffer_a, buffer_r = [], [], [] # record the s, a, r, similiar to the Repay Memory
         
         while not COORD.should_stop() and GLOBAL_EP < MAX_GLOBAL_EP:
+            # add system reset!!!!!,here
+            self.Bm_thread = [1/8 * B_total, 3/8 * B_total, 1/2 * B_total]
+            self.Pm_thread = [1/8 * P_total, 3/8 * P_total, 1/2 * P_total]
+
             state = []
             for m in range(M):
                 state.append(self.Bm_thread[m])
             for m in range(M):
                 state.append(self.Pm_thread[m])
             s = np.array(state) # record the Bm and Pm as an array
-            # add system reset!!!!!,here
-            self.Bm_thread = [1/8 * B_total, 3/8 * B_total, 1/2 * B_total]
-            self.Pm_thread = [1/8 * P_total, 3/8 * P_total, 1/2 * P_total]
 
             #s = self.env.reset() # get the state 
             ep_r = 0 # sum up the total reward in one episode 
